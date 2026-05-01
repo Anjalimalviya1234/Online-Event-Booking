@@ -4,13 +4,19 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
     plugins: [react(), tailwindcss()],
+    
     server: {
         port: 3000,
-        host: true, // It's good practice for docker to listen on all interfaces
+        host: true,
     },
+
     resolve: {
         alias: {
             '@': '/src',
         },
     },
+
+    build: {
+        outDir: "build",   // 👈 ye line add karo
+    }
 });
