@@ -22,31 +22,44 @@ const app = express();
 // Connect to database
 connectDB();
 
-// Middleware
+
+// ✅ 🔥 FIXED CORS (IMPORTANT)
 const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:5173',
-    process.env.CLIENT_URL
-].filter(Boolean);
+    'https://online-event-booking-3-3kz4.onrender.com'
+];
 
 app.use(cors({
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+        // allow requests with no origin (Postman, mobile apps)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
 
+
+// Body parser
 app.use(express.json({
     limit: '10mb',
     verify: (req, res, buf) => {
-        // Store raw body for webhook signature verification
         if (req.originalUrl === '/api/payments/webhook') {
             req.rawBody = buf.toString();
         }
     }
 }));
+
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Session (required for Passport OAuth redirect flow)
+
+// Session
 app.use(session({
     secret: process.env.SESSION_SECRET || process.env.JWT_SECRET || 'google_oauth_secret',
     resave: false,
@@ -58,10 +71,12 @@ app.use(session({
     },
 }));
 
-// Passport initialization
+
+// Passport
 app.use(passport.initialize());
 
-// API Routes
+
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', googleAuthRoutes);
 app.use('/api/venues', venueRoutes);
@@ -71,12 +86,14 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentRoutes);
 
+
 // Health check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', message: 'Event Booking API is running' });
 });
 
-// Error handling
+
+// Error handler
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(err.statusCode || 500).json({
@@ -85,7 +102,9 @@ app.use((err, req, res, next) => {
     });
 });
 
+
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📡 API available at http://localhost:${PORT}/api`);
